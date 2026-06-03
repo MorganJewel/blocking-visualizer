@@ -1,6 +1,7 @@
 // pages/stage-view.js — Stage View main screen
 
 import { state, navigate } from '../main.js';
+import { generateBlockingScript } from '../apertus.js';
 import {
   initStage, renderCharacters, renderTechElements,
   animateToStep, exportSVG, getNextColor, ZONES,
@@ -75,6 +76,7 @@ export function renderStageView(container) {
                 Unresolved
                 <span class="badge" id="unresolved-badge">${state.unresolvedNotes.length}</span>
               </button>
+              <button class="tab-btn" data-tab="blockingtext">📝 Blocking</button>
             </div>
 
             <div class="tab-content">
@@ -107,6 +109,21 @@ export function renderStageView(container) {
               <!-- Unresolved notes tab -->
               <div class="tab-pane" id="tab-unresolved">
                 <div id="unresolved-list"></div>
+              </div>
+
+              <!-- Blocking text tab -->
+              <div class="tab-pane" id="tab-blockingtext">
+                <div class="blocking-text-toolbar">
+                  <select id="bt-format" class="form-select form-select-sm">
+                    <option value="auto">Style: auto-detect</option>
+                    <option value="standard">Standard (NAME crosses to DSR.)</option>
+                    <option value="parens">Parenthetical ((Name crosses to DSR.))</option>
+                    <option value="narrative">Narrative (Name crosses downstage right.)</option>
+                  </select>
+                  <button class="btn btn-secondary btn-sm" id="bt-copy">Copy</button>
+                  <button class="btn btn-secondary btn-sm" id="bt-download">↓ .txt</button>
+                </div>
+                <textarea id="blocking-text-output" class="blocking-textarea" readonly placeholder="Place characters on stage to generate blocking text…"></textarea>
               </div>
             </div>
           </div>
@@ -371,6 +388,14 @@ function renderUnresolvedPanel(container) {
   if (badge) badge.textContent = state.unresolvedNotes.length;
 }
 
+export function refreshBlockingText(container) {
+  const ta = container.querySelector('#blocking-text-output');
+  const fmt = container.querySelector('#bt-format');
+  if (!ta) return;
+  const override = fmt ? fmt.value : 'auto';
+  ta.value = generateBlockingScript(state.blockingEvents, state.scriptText, override);
+}
+
 function setupTabs(container) {
   const tabBtns = container.querySelectorAll('.tab-btn');
   const tabPanes = container.querySelectorAll('.tab-pane');
@@ -383,7 +408,32 @@ function setupTabs(container) {
       const tabId = 'tab-' + btn.dataset.tab;
       const pane = container.querySelector('#' + tabId);
       if (pane) pane.classList.add('active');
+      if (btn.dataset.tab === 'blockingtext') refreshBlockingText(container);
     });
+  });
+
+  // Blocking text tab: format change, copy, download
+  const btFormat = container.querySelector('#bt-format');
+  const btCopy   = container.querySelector('#bt-copy');
+  const btDl     = container.querySelector('#bt-download');
+  if (btFormat) btFormat.addEventListener('change', () => refreshBlockingText(container));
+  if (btCopy) btCopy.addEventListener('click', () => {
+    const ta = container.querySelector('#blocking-text-output');
+    if (!ta || !ta.value) return;
+    navigator.clipboard.writeText(ta.value).then(() => {
+      btCopy.textContent = 'Copied!';
+      setTimeout(() => { btCopy.textContent = 'Copy'; }, 1500);
+    });
+  });
+  if (btDl) btDl.addEventListener('click', () => {
+    const ta = container.querySelector('#blocking-text-output');
+    if (!ta || !ta.value) return;
+    const blob = new Blob([ta.value], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'blocking-notes.txt';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
   });
 
   // Add tech element
@@ -608,6 +658,7 @@ function setupPlacement(container) {
       renderCharacterPanel(container);
       updateStepCounter(container);
       updateCharDatalist(container);
+      refreshBlockingText(container);
 
       exitPlacementMode();
     });

@@ -1,4 +1,59 @@
-// apertus.js — ALL HuggingFace API calls live here. Nothing else calls HuggingFace.
+// apertus.js — HuggingFace API calls + blocking script generation
+
+const ZONE_FULL_NAMES = {
+  USL: 'upstage left',  USC: 'upstage center',  USR: 'upstage right',
+  SL:  'stage left',    CS:  'center stage',     SR:  'stage right',
+  DSL: 'downstage left',DSC: 'downstage center', DSR: 'downstage right',
+};
+
+function detectStyle(scriptText) {
+  if (!scriptText) return { format: 'standard', zones: 'abbrev', names: 'upper' };
+
+  const parenDirections = (scriptText.match(/\([^)]*(?:cross|enter|exit|move|walk)[^)]*\)/gi) || []).length;
+  const abbrevZones = (scriptText.match(/\b(DSR|DSL|DSC|USR|USL|USC|SL|SR|CS)\b/g) || []).length;
+  const fullZones   = (scriptText.match(/\b(downstage|upstage|stage left|stage right|center stage)\b/gi) || []).length;
+  const capsLines   = (scriptText.match(/^[A-Z][A-Z\s]{1,25}$/gm) || []).length;
+
+  return {
+    format: parenDirections > 2 ? 'parens' : 'standard',
+    zones:  abbrevZones >= fullZones ? 'abbrev' : 'full',
+    names:  capsLines > 3 ? 'upper' : 'title',
+  };
+}
+
+/**
+ * generateBlockingScript(events, scriptText, formatOverride)
+ * Converts blocking events to written notation.
+ * formatOverride: 'auto' | 'standard' | 'parens' | 'narrative'
+ */
+export function generateBlockingScript(events, scriptText, formatOverride = 'auto') {
+  if (!events || events.length === 0) return '';
+
+  const detected = detectStyle(scriptText);
+  const useParens     = formatOverride === 'parens'    || (formatOverride === 'auto' && detected.format === 'parens');
+  const useFullZones  = formatOverride === 'narrative' || (formatOverride === 'auto' && detected.zones === 'full');
+  const useUpperNames = formatOverride !== 'narrative' && (formatOverride === 'auto' ? detected.names === 'upper' : formatOverride === 'standard');
+
+  const lines = events.map(evt => {
+    const name = useUpperNames ? evt.character.toUpperCase() : evt.character;
+    const zone = evt.location
+      ? (useFullZones ? (ZONE_FULL_NAMES[evt.location] || evt.location) : evt.location)
+      : null;
+
+    let line;
+    if (!zone || evt.action === 'exits') {
+      line = `${name} exits.`;
+    } else if (evt.action === 'enters') {
+      line = `${name} enters ${useFullZones ? 'at ' : ''}${zone}.`;
+    } else {
+      line = `${name} ${evt.action} ${zone}.`;
+    }
+
+    return useParens ? `(${line})` : line;
+  });
+
+  return lines.join('\n');
+}
 
 const HF_API_URL = 'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2';
 

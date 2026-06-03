@@ -825,6 +825,32 @@ code {
   line-height: 1.8;
 }
 
+/* ===== BLOCKING TEXT TAB ===== */
+.blocking-text-toolbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 0 10px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-light);
+  margin-bottom: 8px;
+}
+.blocking-textarea {
+  width: 100%;
+  min-height: 180px;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-family: monospace;
+  font-size: 0.82rem;
+  line-height: 1.7;
+  padding: 10px 12px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.blocking-textarea:focus { outline: none; border-color: var(--accent-dim); }
+
 /* ===== PLACE TOOLBAR ===== */
 .place-toolbar {
   display: flex;
