@@ -4,7 +4,6 @@ import { state, navigate } from '../main.js';
 import { extractTextFromFile } from '../parser.js';
 import { parseBlockingNotes } from '../apertus.js';
 import { buildTimeline, getAllCharacters } from '../timeline.js';
-import { getApiKey } from '../settings.js';
 import { getNextColor } from '../stage.js';
 
 export function renderParsing(container) {
@@ -27,7 +26,7 @@ export function renderParsing(container) {
             <div class="parse-step" id="step-ai">
               <div class="step-indicator" id="ind-ai">⏸️</div>
               <div class="step-content">
-                <div class="step-title">AI parsing of blocking notes</div>
+                <div class="step-title">Parsing blocking notation</div>
                 <div class="step-detail" id="detail-ai">Waiting…</div>
               </div>
             </div>
@@ -93,8 +92,6 @@ export function renderParsing(container) {
       return;
     }
 
-    const apiKey = getApiKey() || import.meta.env.VITE_HF_API_KEY || '';
-
     // Step 1: Extract text
     setStepState('step-extract', 'ind-extract', 'active', 'Initializing…');
     setProgress(5, 'Extracting text from file…');
@@ -117,24 +114,18 @@ export function renderParsing(container) {
     }
 
     // Step 2: AI parsing
-    setStepState('step-ai', 'ind-ai', 'active', 'Sending to HuggingFace AI…');
-    setProgress(38, 'Preparing text chunks for AI…');
+    setStepState('step-ai', 'ind-ai', 'active', 'Scanning for blocking notes…');
+    setProgress(38, 'Parsing blocking notation…');
 
     const lines = scriptText.split('\n').filter(l => l.trim().length > 0);
     const totalChunks = Math.ceil(lines.length / 10);
-
-    if (!apiKey) {
-      setStepState('step-ai', 'ind-ai', 'error', 'No API key. Please set one in Settings.');
-      showError('HuggingFace API key not set. Go to Settings to add your key, then try again.');
-      return;
-    }
 
     let resolved = [];
     let unresolved = [];
     let aiError = null;
 
     try {
-      const result = await parseBlockingNotes(lines, apiKey, (batch, total) => {
+      const result = await parseBlockingNotes(lines, null, (batch, total) => {
         const pct = 38 + Math.round((batch / total) * 45);
         const msg = `Processing batch ${batch} of ${total}…`;
         setProgress(pct, msg);
