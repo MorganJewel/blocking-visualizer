@@ -82,9 +82,11 @@ function validateEvent(evt, chunkStartIndex) {
  * Returns { resolved: [...], unresolved: [...], error: null|string }
  */
 export async function parseBlockingNotes(textLines, apiKey, onProgress) {
-  if (!apiKey) {
+  const key = apiKey || import.meta.env.VITE_HF_API_KEY || '';
+  if (!key) {
     return { resolved: [], unresolved: [], error: 'No HuggingFace API key set. Go to Settings to add your key.' };
   }
+  apiKey = key;
 
   const chunks = chunkArray(textLines, 10);
   const resolved = [];
