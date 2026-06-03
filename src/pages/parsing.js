@@ -93,7 +93,7 @@ export function renderParsing(container) {
       return;
     }
 
-    const apiKey = getApiKey();
+    const apiKey = getApiKey() || import.meta.env.VITE_HF_API_KEY || '';
 
     // Step 1: Extract text
     setStepState('step-extract', 'ind-extract', 'active', 'Initializing…');
