@@ -56,7 +56,7 @@ export function generateBlockingScript(events, scriptText, formatOverride = 'aut
 }
 
 const HF_MODEL = 'mistralai/Mistral-7B-Instruct-v0.2';
-const HF_API_URL = `https://router.huggingface.co/models/${HF_MODEL}/v1/chat/completions`;
+const HF_API_URL = 'https://router.huggingface.co/featherless-ai/v1/chat/completions';
 
 const VALID_ZONES = ['USL', 'USC', 'USR', 'SL', 'CS', 'SR', 'DSL', 'DSC', 'DSR'];
 
