@@ -4,6 +4,7 @@ import { state, navigate } from '../main.js';
 import {
   initStage, renderCharacters, renderTechElements,
   animateToStep, exportSVG, getNextColor, ZONES,
+  setZoneClickHandler, clearZoneClickHandler,
 } from '../stage.js';
 import { applyStepFromScratch, getConflictsAtStep } from '../timeline.js';
 import { checkAllConflicts, getConflictingTechIds, getConflictsAtStepIndex } from '../conflict.js';
@@ -26,6 +27,16 @@ export function renderStageView(container) {
         <!-- LEFT: Stage map -->
         <div class="stage-panel">
           <div class="panel-title">Stage Map</div>
+
+          <!-- Click-to-place toolbar -->
+          <div class="place-toolbar" id="place-toolbar">
+            <input type="text" id="place-char" class="form-input form-input-sm" placeholder="Character name" list="char-datalist" />
+            <datalist id="char-datalist"></datalist>
+            <button class="btn btn-accent btn-sm" id="place-mode-btn">＋ Place on Stage</button>
+            <span class="place-hint" id="place-hint" style="display:none">Click a zone ↓</span>
+            <button class="btn btn-secondary btn-sm" id="place-cancel-btn" style="display:none">Cancel</button>
+          </div>
+
           <div class="svg-wrapper">
             <svg id="stage-svg" xmlns="http://www.w3.org/2000/svg"></svg>
           </div>
@@ -122,6 +133,7 @@ export function renderStageView(container) {
 
   setupPlayback(container);
   setupTabs(container);
+  setupPlacement(container);
 }
 
 function renderEmptyState(container) {
@@ -542,6 +554,80 @@ function renderStageAtCurrentStep() {
 
 function recomputeConflicts() {
   allConflicts = checkAllConflicts(state.techElements, state.blockingEvents, state.characters);
+}
+
+function updateCharDatalist(container) {
+  const dl = container.querySelector('#char-datalist');
+  if (!dl) return;
+  dl.innerHTML = Object.keys(state.characters)
+    .map(n => `<option value="${n}">`)
+    .join('');
+}
+
+function setupPlacement(container) {
+  const placeBtn   = container.querySelector('#place-mode-btn');
+  const cancelBtn  = container.querySelector('#place-cancel-btn');
+  const hint       = container.querySelector('#place-hint');
+  const charInput  = container.querySelector('#place-char');
+  let placementActive = false;
+
+  updateCharDatalist(container);
+
+  function enterPlacementMode() {
+    const name = charInput.value.trim();
+    if (!name) { charInput.focus(); charInput.classList.add('input-error'); return; }
+    charInput.classList.remove('input-error');
+    placementActive = true;
+    placeBtn.style.display = 'none';
+    cancelBtn.style.display = 'inline-flex';
+    hint.style.display = 'inline';
+    container.querySelector('.svg-wrapper').classList.add('placement-active');
+
+    setZoneClickHandler(svgEl, (zoneName) => {
+      // Determine action: enters if first time on stage, else crosses to
+      const positions = applyStepFromScratch(state.blockingEvents, state.blockingEvents.length - 1);
+      const action = positions[name] ? 'crosses to' : 'enters';
+
+      if (!state.characters[name]) {
+        state.characters[name] = { color: getNextColor(), visible: true };
+      }
+
+      state.blockingEvents.push({
+        character: name,
+        action,
+        location: zoneName,
+        script_line_index: state.blockingEvents.length,
+        confidence: 1.0,
+      });
+
+      state.currentStep = state.blockingEvents.length - 1;
+
+      recomputeConflicts();
+      renderStageAtCurrentStep();
+      buildScriptPanel(container);
+      renderCharacterPanel(container);
+      updateStepCounter(container);
+      updateCharDatalist(container);
+
+      exitPlacementMode();
+    });
+  }
+
+  function exitPlacementMode() {
+    placementActive = false;
+    placeBtn.style.display = 'inline-flex';
+    cancelBtn.style.display = 'none';
+    hint.style.display = 'none';
+    container.querySelector('.svg-wrapper').classList.remove('placement-active');
+    clearZoneClickHandler(svgEl);
+  }
+
+  placeBtn.addEventListener('click', enterPlacementMode);
+  cancelBtn.addEventListener('click', exitPlacementMode);
+  charInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') enterPlacementMode();
+    charInput.classList.remove('input-error');
+  });
 }
 
 function doExport() {

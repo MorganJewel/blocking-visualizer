@@ -825,6 +825,42 @@ code {
   line-height: 1.8;
 }
 
+/* ===== PLACE TOOLBAR ===== */
+.place-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border-light);
+  flex-wrap: wrap;
+}
+.place-hint {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  animation: pulse-hint 1s ease-in-out infinite alternate;
+}
+@keyframes pulse-hint {
+  from { opacity: 0.6; }
+  to   { opacity: 1; }
+}
+.btn-accent {
+  background: rgba(201,168,76,0.18);
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
+}
+.btn-accent:hover {
+  background: rgba(201,168,76,0.3);
+}
+.svg-wrapper.placement-active {
+  outline: 2px solid var(--accent-dim);
+  border-radius: 4px;
+}
+.input-error {
+  border-color: var(--danger) !important;
+}
+
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }

@@ -92,12 +92,57 @@ export function initStage(svgElement) {
   audienceLabel.textContent = '▼ AUDIENCE';
   svgElement.appendChild(audienceLabel);
 
+  // Clickable zone overlays (transparent, sit on top for interaction)
+  const overlayGroup = createSVGEl('g', { id: 'zone-overlays' });
+  for (const [zoneName, zone] of Object.entries(ZONES)) {
+    const overlay = createSVGEl('rect', {
+      x: zone.x, y: zone.y, width: zone.width, height: zone.height,
+      fill: 'transparent', stroke: 'none', cursor: 'default',
+      'data-zone': zoneName,
+    });
+    overlayGroup.appendChild(overlay);
+  }
+  svgElement.appendChild(overlayGroup);
+
   // Groups for layering
   const techGroup = createSVGEl('g', { id: 'tech-elements' });
   svgElement.appendChild(techGroup);
 
   const charGroup = createSVGEl('g', { id: 'characters' });
   svgElement.appendChild(charGroup);
+}
+
+/**
+ * setZoneClickHandler(svgElement, fn)
+ * Enables click-to-place mode. fn(zoneName) is called on click.
+ * Zones glow on hover while active.
+ */
+export function setZoneClickHandler(svgElement, fn) {
+  const overlays = svgElement.querySelectorAll('#zone-overlays rect');
+  overlays.forEach(rect => {
+    rect.style.cursor = 'pointer';
+    rect._clickFn = (e) => { e.stopPropagation(); fn(rect.dataset.zone); };
+    rect._overFn = () => { rect.setAttribute('fill', 'rgba(201,168,76,0.18)'); };
+    rect._outFn  = () => { rect.setAttribute('fill', 'transparent'); };
+    rect.addEventListener('click', rect._clickFn);
+    rect.addEventListener('mouseover', rect._overFn);
+    rect.addEventListener('mouseout', rect._outFn);
+  });
+}
+
+/**
+ * clearZoneClickHandler(svgElement)
+ * Disables click-to-place mode.
+ */
+export function clearZoneClickHandler(svgElement) {
+  const overlays = svgElement.querySelectorAll('#zone-overlays rect');
+  overlays.forEach(rect => {
+    rect.style.cursor = 'default';
+    rect.setAttribute('fill', 'transparent');
+    if (rect._clickFn) rect.removeEventListener('click', rect._clickFn);
+    if (rect._overFn)  rect.removeEventListener('mouseover', rect._overFn);
+    if (rect._outFn)   rect.removeEventListener('mouseout', rect._outFn);
+  });
 }
 
 /**
