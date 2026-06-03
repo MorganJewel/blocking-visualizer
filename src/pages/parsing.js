@@ -114,8 +114,8 @@ export function renderParsing(container) {
     }
 
     // Step 2: AI parsing
-    setStepState('step-ai', 'ind-ai', 'active', 'Scanning for blocking notes…');
-    setProgress(38, 'Parsing blocking notation…');
+    setStepState('step-ai', 'ind-ai', 'active', 'Sending to HuggingFace AI…');
+    setProgress(38, 'Preparing text chunks for AI…');
 
     const lines = scriptText.split('\n').filter(l => l.trim().length > 0);
     const totalChunks = Math.ceil(lines.length / 10);
@@ -125,7 +125,7 @@ export function renderParsing(container) {
     let aiError = null;
 
     try {
-      const result = await parseBlockingNotes(lines, null, (batch, total) => {
+      const result = await parseBlockingNotes(lines, import.meta.env.VITE_HF_API_KEY || '', (batch, total) => {
         const pct = 38 + Math.round((batch / total) * 45);
         const msg = `Processing batch ${batch} of ${total}…`;
         setProgress(pct, msg);

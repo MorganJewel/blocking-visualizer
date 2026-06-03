@@ -56,7 +56,7 @@ export function renderUpload(container) {
           <div class="info-card">
             <div class="info-card-icon">🤖</div>
             <h3>AI-Powered Parsing</h3>
-            <p>HuggingFace AI extracts blocking directions from your script and flags ambiguous notes for review.</p>
+            <p>Apertus AI extracts blocking directions from your script and flags ambiguous notes for manual review.</p>
           </div>
           <div class="info-card">
             <div class="info-card-icon">⚡</div>
