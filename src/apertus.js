@@ -55,7 +55,8 @@ export function generateBlockingScript(events, scriptText, formatOverride = 'aut
   return lines.join('\n');
 }
 
-const HF_API_URL = 'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2';
+const HF_MODEL = 'mistralai/Mistral-7B-Instruct-v0.2';
+const HF_API_URL = `https://router.huggingface.co/hf-inference/models/${HF_MODEL}/v1/chat/completions`;
 
 const VALID_ZONES = ['USL', 'USC', 'USR', 'SL', 'CS', 'SR', 'DSL', 'DSC', 'DSR'];
 
@@ -67,24 +68,28 @@ function chunkArray(arr, size) {
   return chunks;
 }
 
-function buildPrompt(lines) {
+function buildMessages(lines) {
   const text = lines.join('\n');
-  return `<s>[INST] You are a theatrical blocking note parser. Extract stage directions from the following script excerpt.
+  return [
+    {
+      role: 'system',
+      content: 'You are a theatrical blocking note parser. Return only valid JSON arrays. No explanation, no markdown fences, no extra text.',
+    },
+    {
+      role: 'user',
+      content: `Extract stage directions from this script excerpt.
 
-Stage zones are: USL (upstage left), USC (upstage center), USR (upstage right), SL (stage left), CS (center stage), SR (stage right), DSL (downstage left), DSC (downstage center), DSR (downstage right).
+Stage zones: USL (upstage left), USC (upstage center), USR (upstage right), SL (stage left), CS (center stage), SR (stage right), DSL (downstage left), DSC (downstage center), DSR (downstage right).
 
-For each blocking direction you find, output a JSON object with:
-- "character": the character name (string)
-- "action": the type of movement such as "crosses to", "enters", "exits", "moves to" (string)
-- "location": one of the 9 zone codes above (string), or null if exiting
-- "script_line_index": the 0-based index of the line in the excerpt where this appears (number)
-- "confidence": your confidence from 0.0 to 1.0 that you correctly identified this blocking note (number)
+For each blocking direction return a JSON object:
+{ "character": string, "action": string, "location": zone code or null if exiting, "script_line_index": 0-based line number, "confidence": 0.0-1.0 }
 
-Return ONLY a valid JSON array. No explanation, no markdown, no extra text. If there are no blocking directions, return an empty array [].
+Return ONLY a valid JSON array. If no blocking directions exist, return [].
 
 Script excerpt:
-${text}
-[/INST]</s>`;
+${text}`,
+    },
+  ];
 }
 
 function extractJSON(raw) {
@@ -148,55 +153,36 @@ export async function parseBlockingNotes(textLines, apiKey, onProgress) {
 
     const chunk = chunks[i];
     const chunkStartIndex = i * 10;
-    const prompt = buildPrompt(chunk);
+    const messages = buildMessages(chunk);
 
     let raw = '';
     try {
-      const response = await fetch(HF_API_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          inputs: prompt,
-          parameters: {
-            max_new_tokens: 512,
-            temperature: 0.1,
-            return_full_text: false,
-          },
-        }),
+      const body = JSON.stringify({
+        model: HF_MODEL,
+        messages,
+        max_tokens: 512,
+        temperature: 0.1,
       });
+      const headers = {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+      };
+
+      let response = await fetch(HF_API_URL, { method: 'POST', headers, body });
+
+      if (response.status === 503) {
+        await new Promise(r => setTimeout(r, 8000));
+        response = await fetch(HF_API_URL, { method: 'POST', headers, body });
+      }
 
       if (!response.ok) {
         const errText = await response.text();
-        if (response.status === 503) {
-          await new Promise(r => setTimeout(r, 8000));
-          const retry = await fetch(HF_API_URL, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${key}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              inputs: prompt,
-              parameters: { max_new_tokens: 512, temperature: 0.1, return_full_text: false },
-            }),
-          });
-          if (!retry.ok) {
-            errorMsg = `HuggingFace API error: ${retry.status}`;
-            continue;
-          }
-          const retryData = await retry.json();
-          raw = Array.isArray(retryData) ? (retryData[0]?.generated_text || '') : (retryData.generated_text || '');
-        } else {
-          errorMsg = `HuggingFace API error ${response.status}: ${errText.slice(0, 200)}`;
-          continue;
-        }
-      } else {
-        const data = await response.json();
-        raw = Array.isArray(data) ? (data[0]?.generated_text || '') : (data.generated_text || '');
+        errorMsg = `HuggingFace API error ${response.status}: ${errText.slice(0, 200)}`;
+        continue;
       }
+
+      const data = await response.json();
+      raw = data?.choices?.[0]?.message?.content || '';
     } catch (fetchErr) {
       errorMsg = `Network error: ${fetchErr.message}`;
       continue;
