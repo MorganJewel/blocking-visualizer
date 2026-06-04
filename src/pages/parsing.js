@@ -92,6 +92,25 @@ export function renderParsing(container) {
       return;
     }
 
+    // Build mode: just extract text for character detection, skip AI
+    if (state.mode === 'build') {
+      setStepState('step-extract', 'ind-extract', 'active', 'Extracting text…');
+      setProgress(20, 'Extracting text from file…');
+      try {
+        state.scriptText = await extractTextFromFile(state.script, (pct, msg) => {
+          setProgress(20 + pct * 0.6, msg);
+        });
+      } catch (e) {
+        state.scriptText = '';
+      }
+      setStepState('step-extract', 'ind-extract', 'done', 'Done');
+      setStepState('step-ai', 'ind-ai', 'done', 'Skipped — build mode');
+      setStepState('step-build', 'ind-build', 'done', 'Ready');
+      setProgress(100, 'Ready to build blocking!');
+      navigate('#stage');
+      return;
+    }
+
     // Step 1: Extract text
     setStepState('step-extract', 'ind-extract', 'active', 'Initializing…');
     setProgress(5, 'Extracting text from file…');

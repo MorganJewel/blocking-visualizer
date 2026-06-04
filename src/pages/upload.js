@@ -16,11 +16,20 @@ export function renderUpload(container) {
       <main class="upload-main">
         <div class="upload-card">
           <div class="upload-icon" aria-hidden="true">🎭</div>
-          <h2>Upload Your Script</h2>
-          <p class="upload-desc">
-            Upload a PDF or plain text (.txt) script file. BlockViz will extract blocking
-            notes and visualize character movement on an interactive stage map.
-          </p>
+          <h2>How do you want to use BlockViz?</h2>
+
+          <div class="mode-picker">
+            <button class="mode-card active" id="mode-animate">
+              <div class="mode-icon">🎬</div>
+              <div class="mode-title">Animate My Blocking</div>
+              <div class="mode-desc">Your script already has blocking written in. Apertus AI reads it and animates characters on stage.</div>
+            </button>
+            <button class="mode-card" id="mode-build">
+              <div class="mode-icon">✏️</div>
+              <div class="mode-title">Build Blocking Manually</div>
+              <div class="mode-desc">No blocking yet. Upload your script for character detection, then click zones to place characters yourself.</div>
+            </button>
+          </div>
 
           <div class="drop-zone" id="drop-zone">
             <input type="file" id="script-file" accept=".pdf,.txt,text/plain,application/pdf" hidden />
@@ -46,6 +55,7 @@ export function renderUpload(container) {
             Parse Blocking Notes →
           </button>
         </div>
+
 
         <div class="upload-info-cards">
           <div class="info-card">
@@ -134,6 +144,21 @@ export function renderUpload(container) {
     clearError();
   }
 
+  // Mode picker
+  const modeAnimate = container.querySelector('#mode-animate');
+  const modeBuild = container.querySelector('#mode-build');
+
+  function setMode(mode) {
+    state.mode = mode;
+    modeAnimate.classList.toggle('active', mode === 'animate');
+    modeBuild.classList.toggle('active', mode === 'build');
+    proceedBtn.textContent = mode === 'animate' ? 'Parse Blocking Notes →' : 'Detect Characters →';
+  }
+
+  modeAnimate.addEventListener('click', () => setMode('animate'));
+  modeBuild.addEventListener('click', () => setMode('build'));
+  setMode(state.mode);
+
   browseBtn.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
   removeBtn.addEventListener('click', removeFile);
@@ -156,6 +181,6 @@ export function renderUpload(container) {
       showError('Please select a file first.');
       return;
     }
-    navigate('#parsing');
+    navigate(state.mode === 'animate' ? '#parsing' : '#stage');
   });
 }

@@ -245,6 +245,38 @@ code {
   font-size: 0.9rem;
 }
 
+.mode-picker {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.mode-card {
+  flex: 1;
+  background: var(--bg-panel);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 14px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+  color: var(--text);
+}
+
+.mode-card:hover {
+  border-color: var(--accent);
+  background: rgba(201,168,76,0.06);
+}
+
+.mode-card.active {
+  border-color: var(--accent);
+  background: rgba(201,168,76,0.12);
+}
+
+.mode-icon { font-size: 2rem; margin-bottom: 8px; }
+.mode-title { font-size: 1rem; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
+.mode-desc { font-size: 0.8rem; color: var(--text-dim); line-height: 1.4; }
+
 .drop-zone {
   border: 2px dashed var(--border-light);
   border-radius: var(--radius);

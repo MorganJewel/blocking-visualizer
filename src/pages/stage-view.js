@@ -142,6 +142,12 @@ export function renderStageView(container) {
   svgEl = container.querySelector('#stage-svg');
   initStage(svgEl);
 
+  // Show/hide place toolbar based on mode
+  const placeToolbar = container.querySelector('#place-toolbar');
+  if (placeToolbar) {
+    placeToolbar.style.display = state.mode === 'build' ? 'flex' : 'none';
+  }
+
   // If no events yet, show placeholder
   if (state.blockingEvents.length === 0) {
     renderEmptyState(container);
@@ -172,16 +178,20 @@ export function renderStageView(container) {
 }
 
 function renderEmptyState(container) {
-  // Only show empty state if there's also no script text loaded
   if (state.scriptText) return;
   const scriptText = container.querySelector('#script-text');
-  scriptText.innerHTML = `
-    <div class="empty-state">
-      <p>No script loaded yet.</p>
-      <p>Go to <a href="#upload">Upload</a> to load a script.</p>
-      <p class="empty-hint">You can still place characters using the toolbar above the stage.</p>
-    </div>
-  `;
+  const msg = state.mode === 'build'
+    ? `<div class="empty-state">
+        <p>No script loaded yet.</p>
+        <p>Go to <a href="#upload">Upload</a> to load a script.</p>
+        <p class="empty-hint">Then use the toolbar above the stage to place characters zone by zone.</p>
+       </div>`
+    : `<div class="empty-state">
+        <p>No script loaded yet.</p>
+        <p>Go to <a href="#upload">Upload</a> to load a script with blocking written in.</p>
+        <p class="empty-hint">Apertus AI will extract the blocking and animate it here.</p>
+       </div>`;
+  scriptText.innerHTML = msg;
 }
 
 function buildScriptPanel(container) {
@@ -631,24 +641,29 @@ function detectCharactersFromScript(text) {
   const found = new Set();
   const lines = text.split('\n');
 
+  const skip = new Set(['ACT', 'SCENE', 'END', 'FADE', 'BLACKOUT', 'INTERMISSION',
+    'PROLOGUE', 'EPILOGUE', 'CUT TO', 'SMASH CUT', 'INT', 'EXT',
+    'THE END', 'CURTAIN', 'LIGHTS', 'CONTINUED', 'CONT\'D', 'MORE']);
+
   for (let i = 0; i < lines.length - 1; i++) {
     const t = lines[i].trim();
-    const next = lines[i + 1].trim();
 
-    // Must be ALL CAPS, 1-3 words, no punctuation except hyphens/parens
-    if (!/^[A-Z][A-Z\s\-]{0,25}(\s*\([^)]+\))?$/.test(t)) continue;
-    if (t.split(/\s+/).filter(w => /^[A-Z]/.test(w)).length > 3) continue;
+    // Must be strictly ALL CAPS letters, spaces, hyphens only (1–3 words)
+    if (!/^[A-Z][A-Z\s\-]{0,24}$/.test(t)) continue;
 
-    // Skip known non-character headers
-    const skip = ['ACT', 'SCENE', 'END', 'FADE', 'BLACKOUT', 'INTERMISSION',
-                  'PROLOGUE', 'EPILOGUE', 'CUT TO', 'SMASH CUT', 'INT', 'EXT',
-                  'THE END', 'CURTAIN', 'LIGHTS'];
-    if (skip.some(s => t.startsWith(s))) continue;
+    const words = t.split(/\s+/);
+    if (words.length > 3) continue;
+    if (skip.has(t) || skip.has(words[0])) continue;
 
-    // Key rule: next non-empty line must be dialogue (not ALL CAPS, not a heading)
-    if (!next || /^[A-Z\s]{3,}$/.test(next)) continue;
+    // Next non-empty line must be dialogue — lowercase letters present
+    let next = '';
+    for (let j = i + 1; j < lines.length; j++) {
+      next = lines[j].trim();
+      if (next) break;
+    }
+    if (!next || /^[A-Z\s\-]{3,}$/.test(next)) continue;
 
-    found.add(t.replace(/\s*\([^)]+\)/, '').trim()); // strip parentheticals like (V.O.)
+    found.add(t.trim());
   }
   return [...found];
 }

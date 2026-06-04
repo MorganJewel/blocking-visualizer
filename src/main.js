@@ -16,6 +16,7 @@ export const state = {
   isPlaying: false,
   playInterval: null,
   conflicts: [],       // { stepIndex, character, techElement }
+  mode: 'animate',     // 'animate' | 'build'
 };
 
 // ===== ROUTER =====
