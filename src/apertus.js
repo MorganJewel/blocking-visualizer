@@ -140,9 +140,9 @@ function validateEvent(evt, chunkStartIndex) {
  * Returns { resolved: [...], unresolved: [...], error: null|string }
  */
 export async function parseBlockingNotes(textLines, apiKey, onProgress) {
-  const key = apiKey || import.meta.env.VITE_HF_API_KEY || '';
+  const key = apiKey || import.meta.env.VITE_HF_TOKEN || '';
   if (!key) {
-    return { resolved: [], unresolved: [], error: 'No PublicAI API key set. Add VITE_PUBLICAI_API_KEY to GitHub secrets.' };
+    return { resolved: [], unresolved: [], error: 'No HuggingFace API key set.' };
   }
 
   const chunks = chunkArray(textLines, 10);
