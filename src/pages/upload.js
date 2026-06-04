@@ -181,6 +181,6 @@ export function renderUpload(container) {
       showError('Please select a file first.');
       return;
     }
-    navigate(state.mode === 'animate' ? '#parsing' : '#stage');
+    navigate('#parsing');
   });
 }
