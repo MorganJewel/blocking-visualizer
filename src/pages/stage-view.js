@@ -31,11 +31,12 @@ export function renderStageView(container) {
 
           <!-- Click-to-place toolbar -->
           <div class="place-toolbar" id="place-toolbar">
-            <input type="text" id="place-char" class="form-input form-input-sm" placeholder="Character name" list="char-datalist" />
+            <input type="text" id="place-char" class="form-input form-input-sm" placeholder="Type character name…" list="char-datalist" autocomplete="off" />
             <datalist id="char-datalist"></datalist>
             <button class="btn btn-accent btn-sm" id="place-mode-btn">＋ Place on Stage</button>
-            <span class="place-hint" id="place-hint" style="display:none">Click a zone ↓</span>
+            <span class="place-hint" id="place-hint" style="display:none">↓ Now click a zone</span>
             <button class="btn btn-secondary btn-sm" id="place-cancel-btn" style="display:none">Cancel</button>
+            <span class="place-name-prompt" id="place-name-prompt" style="display:none">← Enter a name first</span>
           </div>
 
           <div class="svg-wrapper">
@@ -148,18 +149,31 @@ export function renderStageView(container) {
   recomputeConflicts();
   renderStageAtCurrentStep();
 
+  // Auto-detect characters from script text and seed into state
+  if (state.scriptText) {
+    const detected = detectCharactersFromScript(state.scriptText);
+    detected.forEach(name => {
+      if (!state.characters[name]) {
+        state.characters[name] = { color: getNextColor(), visible: true };
+      }
+    });
+  }
+
   setupPlayback(container);
   setupTabs(container);
   setupPlacement(container);
+  renderCharacterPanel(container);
 }
 
 function renderEmptyState(container) {
+  // Only show empty state if there's also no script text loaded
+  if (state.scriptText) return;
   const scriptText = container.querySelector('#script-text');
   scriptText.innerHTML = `
     <div class="empty-state">
-      <p>No blocking events parsed yet.</p>
-      <p>Go to <a href="#upload">Upload</a> to load a script, or check <a href="#settings">Settings</a> to set your HuggingFace API key.</p>
-      <p class="empty-hint">You can still add tech elements and use the stage map below.</p>
+      <p>No script loaded yet.</p>
+      <p>Go to <a href="#upload">Upload</a> to load a script.</p>
+      <p class="empty-hint">You can still place characters using the toolbar above the stage.</p>
     </div>
   `;
 }
@@ -606,12 +620,27 @@ function recomputeConflicts() {
   allConflicts = checkAllConflicts(state.techElements, state.blockingEvents, state.characters);
 }
 
+function detectCharactersFromScript(text) {
+  if (!text) return [];
+  const found = new Set();
+  text.split('\n').forEach(line => {
+    const t = line.trim();
+    // ALL-CAPS lines of 1-4 words = character cues
+    if (/^[A-Z][A-Z\s\-]{1,30}$/.test(t) && t.split(/\s+/).length <= 4) {
+      const skip = ['ACT ONE','ACT TWO','ACT THREE','SCENE','END OF','THE END','FADE OUT','BLACKOUT','INTERMISSION','PROLOGUE','EPILOGUE'];
+      if (!skip.some(s => t.startsWith(s))) found.add(t);
+    }
+  });
+  return [...found];
+}
+
 function updateCharDatalist(container) {
   const dl = container.querySelector('#char-datalist');
   if (!dl) return;
-  dl.innerHTML = Object.keys(state.characters)
-    .map(n => `<option value="${n}">`)
-    .join('');
+  // Merge known characters + any detected from script text
+  const fromScript = detectCharactersFromScript(state.scriptText);
+  const all = new Set([...Object.keys(state.characters), ...fromScript]);
+  dl.innerHTML = [...all].map(n => `<option value="${n}">`).join('');
 }
 
 function setupPlacement(container) {
@@ -623,9 +652,16 @@ function setupPlacement(container) {
 
   updateCharDatalist(container);
 
+  const namePrompt = container.querySelector('#place-name-prompt');
+
   function enterPlacementMode() {
     const name = charInput.value.trim();
-    if (!name) { charInput.focus(); charInput.classList.add('input-error'); return; }
+    if (!name) {
+      charInput.focus();
+      charInput.classList.add('input-error');
+      if (namePrompt) { namePrompt.style.display = 'inline'; setTimeout(() => { namePrompt.style.display = 'none'; }, 2500); }
+      return;
+    }
     charInput.classList.remove('input-error');
     placementActive = true;
     placeBtn.style.display = 'none';

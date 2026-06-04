@@ -886,6 +886,11 @@ code {
 .input-error {
   border-color: var(--danger) !important;
 }
+.place-name-prompt {
+  color: var(--danger);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
 
 /* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
