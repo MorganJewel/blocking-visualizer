@@ -30,6 +30,39 @@ export async function extractTextFromFile(file, onProgress) {
   throw new Error('Unsupported file type. Please upload a .pdf or .txt file.');
 }
 
+// Group PDF text items by Y position to reconstruct proper lines.
+// Each item has transform[5] = Y coordinate on the page.
+function reconstructLines(items) {
+  if (!items || items.length === 0) return '';
+
+  // Sort by descending Y (top of page first), then ascending X
+  const sorted = items
+    .filter(item => item.str && item.str.trim())
+    .map(item => ({
+      str: item.str,
+      x: item.transform[4],
+      y: Math.round(item.transform[5]), // round to group near-same-Y items
+    }))
+    .sort((a, b) => b.y - a.y || a.x - b.x);
+
+  const lines = [];
+  let currentY = null;
+  let currentLine = [];
+
+  for (const item of sorted) {
+    if (currentY === null || Math.abs(item.y - currentY) > 3) {
+      if (currentLine.length > 0) lines.push(currentLine.join(' ').trim());
+      currentLine = [item.str];
+      currentY = item.y;
+    } else {
+      currentLine.push(item.str);
+    }
+  }
+  if (currentLine.length > 0) lines.push(currentLine.join(' ').trim());
+
+  return lines.join('\n');
+}
+
 async function extractTextFromPDF(file, onProgress) {
   const update = (pct, msg) => { if (onProgress) onProgress(pct, msg); };
 
@@ -63,10 +96,7 @@ async function extractTextFromPDF(file, onProgress) {
     const page = await pdfDoc.getPage(pageNum);
     const textContent = await page.getTextContent();
 
-    const pageText = textContent.items
-      .filter(item => item.str)
-      .map(item => item.str)
-      .join(' ');
+    const pageText = reconstructLines(textContent.items);
 
     if (pageText.trim().length > 20) {
       hasTextLayer = true;
