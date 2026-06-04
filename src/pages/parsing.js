@@ -125,7 +125,7 @@ export function renderParsing(container) {
     let aiError = null;
 
     try {
-      const result = await parseBlockingNotes(lines, import.meta.env.VITE_PUBLICAI_API_KEY || import.meta.env.VITE_HF_API_KEY || '', (batch, total) => {
+      const result = await parseBlockingNotes(lines, import.meta.env.VITE_HF_API_KEY || '', (batch, total) => {
         const pct = 38 + Math.round((batch / total) * 45);
         const msg = `Processing batch ${batch} of ${total}…`;
         setProgress(pct, msg);
