@@ -141,7 +141,7 @@ function validateEvent(evt, chunkStartIndex) {
  * Returns { resolved: [...], unresolved: [...], error: null|string }
  */
 export async function parseBlockingNotes(textLines, apiKey, onProgress) {
-  const key = apiKey || import.meta.env.VITE_HF_API_KEY || '';
+  const key = apiKey || import.meta.env.VITE_PUBLICAI_API_KEY || import.meta.env.VITE_HF_API_KEY || '';
   if (!key) {
     return { resolved: [], unresolved: [], error: 'No PublicAI API key set. Add VITE_PUBLICAI_API_KEY to GitHub secrets.' };
   }
