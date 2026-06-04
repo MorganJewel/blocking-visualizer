@@ -629,14 +629,27 @@ function recomputeConflicts() {
 function detectCharactersFromScript(text) {
   if (!text) return [];
   const found = new Set();
-  text.split('\n').forEach(line => {
-    const t = line.trim();
-    // ALL-CAPS lines of 1-4 words = character cues
-    if (/^[A-Z][A-Z\s\-]{1,30}$/.test(t) && t.split(/\s+/).length <= 4) {
-      const skip = ['ACT ONE','ACT TWO','ACT THREE','SCENE','END OF','THE END','FADE OUT','BLACKOUT','INTERMISSION','PROLOGUE','EPILOGUE'];
-      if (!skip.some(s => t.startsWith(s))) found.add(t);
-    }
-  });
+  const lines = text.split('\n');
+
+  for (let i = 0; i < lines.length - 1; i++) {
+    const t = lines[i].trim();
+    const next = lines[i + 1].trim();
+
+    // Must be ALL CAPS, 1-3 words, no punctuation except hyphens/parens
+    if (!/^[A-Z][A-Z\s\-]{0,25}(\s*\([^)]+\))?$/.test(t)) continue;
+    if (t.split(/\s+/).filter(w => /^[A-Z]/.test(w)).length > 3) continue;
+
+    // Skip known non-character headers
+    const skip = ['ACT', 'SCENE', 'END', 'FADE', 'BLACKOUT', 'INTERMISSION',
+                  'PROLOGUE', 'EPILOGUE', 'CUT TO', 'SMASH CUT', 'INT', 'EXT',
+                  'THE END', 'CURTAIN', 'LIGHTS'];
+    if (skip.some(s => t.startsWith(s))) continue;
+
+    // Key rule: next non-empty line must be dialogue (not ALL CAPS, not a heading)
+    if (!next || /^[A-Z\s]{3,}$/.test(next)) continue;
+
+    found.add(t.replace(/\s*\([^)]+\)/, '').trim()); // strip parentheticals like (V.O.)
+  }
   return [...found];
 }
 

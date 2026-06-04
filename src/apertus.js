@@ -77,14 +77,16 @@ function buildMessages(lines) {
     },
     {
       role: 'user',
-      content: `Extract stage directions from this script excerpt.
+      content: `Extract ONLY explicitly written stage directions from this script excerpt. Do NOT infer, guess, or add any blocking that is not directly stated as a written direction.
+
+A valid blocking direction must: (1) name a specific character, (2) include a movement verb (enters, exits, crosses, moves, walks, goes, etc.), AND (3) specify a destination or location — either as a zone code or a location description that maps to a zone.
 
 Stage zones: USL (upstage left), USC (upstage center), USR (upstage right), SL (stage left), CS (center stage), SR (stage right), DSL (downstage left), DSC (downstage center), DSR (downstage right).
 
-For each blocking direction return a JSON object:
+For each valid blocking direction return a JSON object:
 { "character": string, "action": string, "location": zone code or null if exiting, "script_line_index": 0-based line number, "confidence": 0.0-1.0 }
 
-Return ONLY a valid JSON array. If no blocking directions exist, return [].
+If no such explicitly written blocking directions exist in this excerpt, return []. Do NOT create blocking from dialogue context or character presence alone.
 
 Script excerpt:
 ${text}`,
