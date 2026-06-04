@@ -56,7 +56,7 @@ export function generateBlockingScript(events, scriptText, formatOverride = 'aut
 }
 
 const HF_MODEL = 'swiss-ai/Apertus-8B-Instruct-2509';
-const HF_API_URL = 'https://router.huggingface.co/v1/chat/completions';
+const HF_API_URL = 'https://router.huggingface.co/publicai/v1/chat/completions';
 
 const VALID_ZONES = ['USL', 'USC', 'USR', 'SL', 'CS', 'SR', 'DSL', 'DSC', 'DSR'];
 
