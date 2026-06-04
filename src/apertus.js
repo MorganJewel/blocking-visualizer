@@ -55,8 +55,8 @@ export function generateBlockingScript(events, scriptText, formatOverride = 'aut
   return lines.join('\n');
 }
 
-const HF_MODEL = 'swiss-ai/Apertus-8B-Instruct-2509:publicai';
-const HF_API_URL = 'https://router.huggingface.co/v1/chat/completions';
+const HF_MODEL = 'swiss-ai/apertus-8b-instruct';
+const HF_API_URL = 'https://api.publicai.co/v1/chat/completions';
 
 const VALID_ZONES = ['USL', 'USC', 'USR', 'SL', 'CS', 'SR', 'DSL', 'DSC', 'DSR'];
 
@@ -140,9 +140,9 @@ function validateEvent(evt, chunkStartIndex) {
  * Returns { resolved: [...], unresolved: [...], error: null|string }
  */
 export async function parseBlockingNotes(textLines, apiKey, onProgress) {
-  const key = apiKey || import.meta.env.VITE_HF_API_KEY || '';
+  const key = apiKey || import.meta.env.VITE_PUBLICAI_API_KEY || '';
   if (!key) {
-    return { resolved: [], unresolved: [], error: 'No HuggingFace API key set. Go to Settings to add your key.' };
+    return { resolved: [], unresolved: [], error: 'No PublicAI API key set. Add VITE_PUBLICAI_API_KEY to GitHub secrets.' };
   }
 
   const chunks = chunkArray(textLines, 10);
