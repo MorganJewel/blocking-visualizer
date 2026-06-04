@@ -31,10 +31,16 @@ export function renderStageView(container) {
 
           <!-- Click-to-place toolbar -->
           <div class="place-toolbar" id="place-toolbar">
-            <input type="text" id="place-char" class="form-input form-input-sm" placeholder="Type character name…" list="char-datalist" autocomplete="off" />
+            <label class="place-label">Place:</label>
+            <input type="text" id="place-char" class="form-input form-input-sm" placeholder="Character name…" list="char-datalist" autocomplete="off" />
             <datalist id="char-datalist"></datalist>
-            <button class="btn btn-accent btn-sm" id="place-mode-btn">＋ Place on Stage</button>
-            <span class="place-hint" id="place-hint" style="display:none">↓ Now click a zone</span>
+            <select id="place-action" class="form-select form-select-sm">
+              <option value="enters">enters</option>
+              <option value="crosses to" selected>crosses to</option>
+              <option value="exits">exits</option>
+            </select>
+            <button class="btn btn-accent" id="place-mode-btn">＋ Click a Zone</button>
+            <span class="place-hint" id="place-hint" style="display:none">👆 Click any zone below</span>
             <button class="btn btn-secondary btn-sm" id="place-cancel-btn" style="display:none">Cancel</button>
             <span class="place-name-prompt" id="place-name-prompt" style="display:none">← Enter a name first</span>
           </div>
@@ -141,14 +147,6 @@ export function renderStageView(container) {
     renderEmptyState(container);
   }
 
-  buildScriptPanel(container);
-  renderCharacterPanel(container);
-  renderTechPanel(container);
-  renderUnresolvedPanel(container);
-  refreshStage(container);
-  recomputeConflicts();
-  renderStageAtCurrentStep();
-
   // Auto-detect characters from script text and seed into state
   if (state.scriptText) {
     const detected = detectCharactersFromScript(state.scriptText);
@@ -159,10 +157,18 @@ export function renderStageView(container) {
     });
   }
 
+  buildScriptPanel(container);
+  renderCharacterPanel(container);
+  renderTechPanel(container);
+  renderUnresolvedPanel(container);
+  recomputeConflicts();
+  renderStageAtCurrentStep();
+
   setupPlayback(container);
   setupTabs(container);
   setupPlacement(container);
   renderCharacterPanel(container);
+  updateCharDatalist(container);
 }
 
 function renderEmptyState(container) {
@@ -644,10 +650,11 @@ function updateCharDatalist(container) {
 }
 
 function setupPlacement(container) {
-  const placeBtn   = container.querySelector('#place-mode-btn');
-  const cancelBtn  = container.querySelector('#place-cancel-btn');
-  const hint       = container.querySelector('#place-hint');
-  const charInput  = container.querySelector('#place-char');
+  const placeBtn     = container.querySelector('#place-mode-btn');
+  const cancelBtn    = container.querySelector('#place-cancel-btn');
+  const hint         = container.querySelector('#place-hint');
+  const charInput    = container.querySelector('#place-char');
+  const actionSelect = container.querySelector('#place-action');
   let placementActive = false;
 
   updateCharDatalist(container);
@@ -670,9 +677,7 @@ function setupPlacement(container) {
     container.querySelector('.svg-wrapper').classList.add('placement-active');
 
     setZoneClickHandler(svgEl, (zoneName) => {
-      // Determine action: enters if first time on stage, else crosses to
-      const positions = applyStepFromScratch(state.blockingEvents, state.blockingEvents.length - 1);
-      const action = positions[name] ? 'crosses to' : 'enters';
+      const action = actionSelect ? actionSelect.value : 'crosses to';
 
       if (!state.characters[name]) {
         state.characters[name] = { color: getNextColor(), visible: true };

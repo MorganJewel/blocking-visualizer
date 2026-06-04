@@ -92,8 +92,15 @@ export function initStage(svgElement) {
   audienceLabel.textContent = '▼ AUDIENCE';
   svgElement.appendChild(audienceLabel);
 
-  // Clickable zone overlays (transparent, sit on top for interaction)
-  const overlayGroup = createSVGEl('g', { id: 'zone-overlays' });
+  // Groups for layering (tech and chars below overlays)
+  const techGroup = createSVGEl('g', { id: 'tech-elements' });
+  svgElement.appendChild(techGroup);
+
+  const charGroup = createSVGEl('g', { id: 'characters' });
+  svgElement.appendChild(charGroup);
+
+  // Clickable zone overlays — must be last so they sit on top and receive clicks
+  const overlayGroup = createSVGEl('g', { id: 'zone-overlays', style: 'pointer-events:all' });
   for (const [zoneName, zone] of Object.entries(ZONES)) {
     const overlay = createSVGEl('rect', {
       x: zone.x, y: zone.y, width: zone.width, height: zone.height,
@@ -103,13 +110,6 @@ export function initStage(svgElement) {
     overlayGroup.appendChild(overlay);
   }
   svgElement.appendChild(overlayGroup);
-
-  // Groups for layering
-  const techGroup = createSVGEl('g', { id: 'tech-elements' });
-  svgElement.appendChild(techGroup);
-
-  const charGroup = createSVGEl('g', { id: 'characters' });
-  svgElement.appendChild(charGroup);
 }
 
 /**
